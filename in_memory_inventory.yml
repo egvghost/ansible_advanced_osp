@@ -1,0 +1,29 @@
+- name: Show in-memory inventory with add_host
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  tasks:
+  - name: Get server info
+    os_server_info:
+      cloud: openstack
+    register: r_os_server_info
+
+  - name: Add servers to in-memory inventory
+    add_host:
+      name: "{{ _server.name }}"
+      groups:
+      - "{{ _server.metadata.group | default('ungrouped') }}"
+      ansible_host: "{{ _server.accessIPv4 }}"
+      ansible_user: cloud-user
+      ansible_ssh_private_key_file: ~/.ssh/test_id_rsa
+    loop: "{{ r_os_server_info.openstack_servers }}"
+    loop_control:
+      loop_var: _server
+      label: "{{ _server.name }}"
+    changed_when: true
+
+- name: Configure servers
+  hosts: all
+  gather_facts: false
+  tasks:
+  - ping: {}
